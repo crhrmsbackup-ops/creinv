@@ -11,3 +11,4 @@ $config['einv_client_secret'] = '';
 // AppKey is generated automatically for every authentication request.
 $config['einv_username'] = '';
 $config['einv_password'] = '';
+$config['einv_export_country_code'] = 'US';

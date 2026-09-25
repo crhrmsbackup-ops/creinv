@@ -60,6 +60,16 @@ class Einvoice extends CI_Controller
 		$header = $data['header'][0];
 		$seller = $data['export'][0];
 		$buyer = $data['buyer'][0];
+		$seller_gstin = $this->field($seller, 'GSTIN', $this->config->item('einv_gstin'));
+		$buyer_gstin = $this->field($buyer, 'GSTIN', 'URP');
+		$buyer_state = $this->state_code($buyer_gstin);
+		$country_code = strtoupper(trim((string) $this->field(
+			$header, 'COUNTRYFINAL', $this->config->item('einv_export_country_code')
+		)));
+		if (!$seller_gstin || strlen($seller_gstin) !== 15 || !$buyer_state
+			|| !preg_match('/^[A-Z]{2}$/', $country_code)) {
+			throw new RuntimeException('Invoice requires seller GSTIN, buyer state code, and two-letter destination country code.');
+		}
 		$items = array();
 		$assessable = 0;
 		foreach ($data['grid'] as $index => $row) {
@@ -75,16 +85,22 @@ class Einvoice extends CI_Controller
 				'UnitPrice' => (float) $this->field($row, 'RATE', 0),
 				'TotAmt' => $amount,
 				'AssAmt' => $amount,
+				'TotItemVal' => $amount,
 			);
 		}
 		return array(
 			'Version' => '1.1',
 			'TranDtls' => array('TaxSch' => 'GST', 'SupTyp' => 'EXP'),
 			'DocDtls' => array('Typ' => 'INV', 'No' => $header['INVOICENO'], 'Dt' => $this->date($header['DOCDATE'])),
-			'SellerDtls' => $this->party($seller, $this->config->item('einv_gstin')),
-			'BuyerDtls' => $this->party($buyer, 'URP'),
+			'SellerDtls' => $this->party($seller, $seller_gstin),
+			'BuyerDtls' => array_merge($this->party($buyer, $buyer_gstin), array('Pos' => $buyer_state)),
+			'ExpDtls' => array(
+				'RefClm' => FALSE,
+				'CntCode' => $country_code,
+				'ForCur' => $this->config->item('einv_default_export_currency'),
+			),
 			'ItemList' => $items,
-			'ValDtls' => array('AssVal' => $assessable, 'TotInvVal' => $assessable),
+			'ValDtls' => array('AssVal' => $assessable, 'IgstVal' => 0, 'TotInvVal' => $assessable),
 		);
 	}
 
@@ -114,6 +130,15 @@ class Einvoice extends CI_Controller
 		);
 	}
 
+	private function state_code($gstin)
+	{
+		if ($gstin === 'URP') {
+			return '96';
+		}
+		return preg_match('/^[0-9]{2}[A-Z0-9]{13}$/', (string) $gstin)
+			? substr($gstin, 0, 2) : '';
+	}
+
 	private function party($row, $default_gstin)
 	{
 		return array(
@@ -123,6 +148,7 @@ class Einvoice extends CI_Controller
 			'Addr2' => $this->field($row, 'ADD2', ''),
 			'Loc' => $this->field($row, 'CITYNAME', ''),
 			'Pin' => (int) $this->field($row, 'PINCODE', $this->field($row, 'PIN', 0)),
+			'Stcd' => $this->state_code($this->field($row, 'GSTIN', 'URP')),
 		);
 	}
 

@@ -21,6 +21,8 @@ $config['einv_app_key'] = getenv('EINV_APP_KEY') ? getenv('EINV_APP_KEY') : '';
 $config['einv_username'] = getenv('EINV_USERNAME') ? getenv('EINV_USERNAME') : '';
 $config['einv_password'] = getenv('EINV_PASSWORD') ? getenv('EINV_PASSWORD') : '';
 $config['einv_sup_gstin'] = getenv('EINV_SUP_GSTIN') ? getenv('EINV_SUP_GSTIN') : '';
+$config['einv_export_country_code'] = getenv('EINV_EXPORT_COUNTRY_CODE')
+	? strtoupper(getenv('EINV_EXPORT_COUNTRY_CODE')) : '';
 $config['einv_token_refresh_margin_minutes'] = 5;
 $config['einv_default_export_currency'] = 'USD';
 $config['einv_paths'] = array(

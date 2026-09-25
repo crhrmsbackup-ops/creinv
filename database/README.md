@@ -5,6 +5,8 @@
    production credentials. AppKey is generated automatically as a fresh
    random 32-byte value for each authentication request. The supplied public key is already at
    `application/config/keys/einv_public_key.pem`.
+   Set `einv_export_country_code` to the destination's two-letter ISO country code
+   if `COUNTRYFINAL` from Oracle is a country name rather than a code.
 2. Run `database/einvoice_oracle.sql` once as the `CRERP` schema owner.
 3. From the Windows application, call
    `index.php/einvoice/create/CRG/DOI/26-27/000010`. The complete path is
