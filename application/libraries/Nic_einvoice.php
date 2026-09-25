@@ -49,10 +49,17 @@ class Nic_einvoice
 			'Password' => $this->required('einv_password'),
 			'AppKey' => $app_key,
 			'ForceRefreshAccessToken' => TRUE,
-		));
+		), JSON_UNESCAPED_SLASHES);
+		if ($credentials === FALSE) {
+			throw new RuntimeException('Unable to create NIC authentication JSON.');
+		}
 		$encrypted = $this->encrypt_with_pem($credentials);
+		$encoded = base64_encode($encrypted);
+		if ($encoded === FALSE || base64_decode($encoded, TRUE) === FALSE) {
+			throw new RuntimeException('Unable to create valid Base64 NIC authentication data.');
+		}
 		$response = $this->http('auth', array(
-			'Data' => base64_encode($encrypted),
+			'Data' => $encoded,
 		), array());
 		if ((string) $this->value($response, 'Status') !== '1') {
 			$message = isset($response['ErrorDetails']) ? json_encode($response['ErrorDetails']) : 'Unknown NIC error.';
@@ -124,6 +131,10 @@ class Nic_einvoice
 		$key = openssl_pkey_get_public($key_data);
 		if ($key === FALSE) {
 			throw new RuntimeException('NIC public PEM key is invalid: ' . $path);
+		}
+		$key_details = openssl_pkey_get_details($key);
+		if (!is_array($key_details) || empty($key_details['bits']) || $key_details['bits'] < 2048) {
+			throw new RuntimeException('NIC public PEM key must be an RSA key of at least 2048 bits.');
 		}
 		$encrypted = '';
 		if (!openssl_public_encrypt($value, $encrypted, $key, OPENSSL_PKCS1_PADDING)) {

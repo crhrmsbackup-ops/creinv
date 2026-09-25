@@ -15,3 +15,6 @@ The endpoint accepts only a URL invoice number and does not need a POST body.
 It returns JSON and writes the IRN, acknowledgement, signed QR code, e-way
 bill values, status, and full response into `DOCINVMAS`. Credentials are
 intentionally not included in the repository.
+
+The PEM key must match the selected API environment. Do not use a sandbox key
+with a production endpoint, or a production key with a sandbox endpoint.
