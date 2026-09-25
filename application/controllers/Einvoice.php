@@ -93,37 +93,30 @@ class Einvoice extends CI_Controller
 		$header = $data['header'][0];
 		$seller = $data['export'][0];
 		$buyer = $data['buyer'][0];
-		$footer = isset($data['footer'][0]) ? $data['footer'][0] : array();
-		$items = array();
-		foreach ($data['grid'] as $row) {
-			$items[] = array(
-				'productName' => $this->field($row, 'DESGOODS', ''),
-				'productDesc' => $this->field($row, 'DESGOODS', ''),
-				'hsnCode' => (int) $this->field($row, 'HSN', 0),
-				'quantity' => (float) $this->field($row, 'INVOICEQTY', 0),
-				'taxableAmount' => (float) $this->field($row, 'AMOUNT', 0),
-			);
-		}
+		$shipto = isset($data['shipto'][0]) ? $data['shipto'][0] : $buyer;
 		return array(
-			'SupplyType' => 'O',
-			'SubSupplyType' => 1,
-			'DocType' => 'INV',
-			'DocNo' => $header['INVOICENO'],
-			'DocDate' => $this->date($header['DOCDATE']),
-			'FromGstin' => $this->field($seller, 'GSTIN', $this->config->item('einv_gstin')),
-			'FromTrdName' => $this->field($seller, 'EXPORTNAME', ''),
-			'FromAddr1' => $this->field($seller, 'ADD1', ''),
-			'FromPlace' => $this->field($seller, 'CITYNAME', ''),
-			'FromPincode' => (int) $this->field($seller, 'PIN', 0),
-			'ToGstin' => $this->field($buyer, 'GSTIN', 'URP'),
-			'ToTrdName' => $this->field($buyer, 'PARTYID', ''),
-			'ToAddr1' => $this->field($buyer, 'ADD1', ''),
-			'ToPlace' => $this->field($buyer, 'CITYNAME', ''),
-			'ToPincode' => (int) $this->field($buyer, 'PINCODE', 0),
+			'Irn' => '',
+			'Distance' => 0,
 			'TransMode' => 1,
-			'TotalValue' => (float) $this->field($footer, 'TOTALGROSSWGT', 0),
-			'TotalInvoiceValue' => (float) $this->field($footer, 'TOTALGROSSWGT', 0),
-			'ItemList' => $items,
+			'TransId' => '',
+			'TransName' => '',
+			'TransDocDt' => '',
+			'TransDocNo' => '',
+			'VehNo' => '',
+			'VehType' => 'R',
+			'ExpShipDtls' => $this->eway_address($shipto),
+			'DispDtls' => $this->eway_address($seller),
+		);
+	}
+
+	private function eway_address($row)
+	{
+		return array(
+			'Addr1' => $this->field($row, 'ADD1', ''),
+			'Addr2' => $this->field($row, 'ADD2', ''),
+			'Loc' => $this->field($row, 'CITYNAME', ''),
+			'Pin' => (int) $this->field($row, 'PINCODE', $this->field($row, 'PIN', 0)),
+			'Stcd' => substr((string) $this->field($row, 'GSTIN', ''), 0, 2),
 		);
 	}
 

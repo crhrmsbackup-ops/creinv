@@ -28,7 +28,7 @@ class Nic_einvoice
 		$result = $invoice_response;
 		if ($ewaybill) {
 			$ewaybill['Irn'] = isset($invoice_response['Irn']) ? $invoice_response['Irn'] : '';
-			$result['ewaybill'] = $this->request('generate_ewaybill', $ewaybill);
+			$result['ewaybill'] = $this->request('generate_ewaybill', $ewaybill, TRUE);
 			if (is_array($result['ewaybill'])) {
 				$result = array_merge($result, $result['ewaybill']);
 			}
@@ -78,15 +78,19 @@ class Nic_einvoice
 		$this->sek = $this->decrypt($data['Sek'], $app_key);
 	}
 
-	private function request($path, $payload)
+	private function request($path, $payload, $ewaybill = FALSE)
 	{
 		$json = json_encode($payload);
-		return $this->decode($this->http($path, array(
-			'Data' => base64_encode($this->encrypt($json, $this->sek)),
-		), array(
+		$headers = array(
 			'AuthToken' => $this->token,
 			'user_name' => $this->authenticated_user,
-		)));
+		);
+		if ($ewaybill && !empty($this->config['einv_sup_gstin'])) {
+			$headers['sup_gstin'] = $this->config['einv_sup_gstin'];
+		}
+		return $this->decode($this->http($path, array(
+			'Data' => base64_encode($this->encrypt($json, $this->sek)),
+		), $headers));
 	}
 
 	private function http($path, $payload, $extra_headers)
