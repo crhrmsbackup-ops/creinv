@@ -19,6 +19,10 @@ class Einvoice extends CI_Controller
 	public function create($docid = NULL)
 	{
 		$this->output->set_content_type('application/json');
+		$segments = func_get_args();
+		if (count($segments) > 1) {
+			$docid = implode('/', $segments);
+		}
 		if (!$docid) {
 			$docid = $this->input->get('invoice', TRUE);
 		}
