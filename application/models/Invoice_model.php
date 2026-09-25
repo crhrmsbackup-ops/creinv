@@ -25,31 +25,38 @@ class Invoice_model extends CI_Model
 
 	public function save_response($docid, $response)
 	{
-		$data = array(
-			'einv_irn' => $this->value($response, 'Irn'),
-			'einv_ack_no' => $this->value($response, 'AckNo'),
-			'einv_ack_date' => $this->oracle_date($this->value($response, 'AckDt')),
-			'einv_qr_code' => $this->value($response, 'SignedQRCode'),
-			'eway_bill_no' => $this->value($response, 'EwbNo'),
-			'eway_bill_date' => $this->oracle_date($this->value($response, 'EwbDt')),
-			'eway_valid_upto' => $this->oracle_date($this->value($response, 'EwbValidTill')),
-			'einv_status' => 'SUCCESS',
-			'einv_response' => json_encode($response),
-			'einv_updated_at' => date('Y-m-d H:i:s'),
+		$sql = 'UPDATE DOCINVMAS SET
+			EINV_IRN = ?, EINV_ACK_NO = ?, EINV_ACK_DATE = ?, EINV_QR_CODE = ?,
+			EWAY_BILL_NO = ?, EWAY_BILL_DATE = ?, EWAY_VALID_UPTO = ?,
+			EINV_STATUS = ?, EINV_RESPONSE = ?, EINV_UPDATED_AT = ?
+			WHERE DOCID = ?';
+		$binds = array(
+			$this->value($response, 'Irn'),
+			$this->value($response, 'AckNo'),
+			$this->oracle_date($this->value($response, 'AckDt')),
+			$this->value($response, 'SignedQRCode'),
+			$this->value($response, 'EwbNo'),
+			$this->oracle_date($this->value($response, 'EwbDt')),
+			$this->oracle_date($this->value($response, 'EwbValidTill')),
+			'SUCCESS',
+			json_encode($response),
+			date('Y-m-d H:i:s'),
+			$docid,
 		);
-		$this->db->where('docid', $docid);
-		if (!$this->db->update('docinvmas', $data)) {
+		if (!$this->db->query($sql, $binds)) {
 			throw new RuntimeException('Unable to save e-invoice response for ' . $docid . '.');
 		}
 	}
 
 	public function save_error($docid, $message)
 	{
-		$this->db->where('docid', $docid);
-		$this->db->update('docinvmas', array(
-			'einv_status' => 'FAILED',
-			'einv_response' => json_encode(array('error' => $message)),
-			'einv_updated_at' => date('Y-m-d H:i:s'),
+		$sql = 'UPDATE DOCINVMAS SET EINV_STATUS = ?, EINV_RESPONSE = ?,
+			EINV_UPDATED_AT = ? WHERE DOCID = ?';
+		$this->db->query($sql, array(
+			'FAILED',
+			json_encode(array('error' => $message)),
+			date('Y-m-d H:i:s'),
+			$docid,
 		));
 	}
 
