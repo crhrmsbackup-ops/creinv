@@ -44,17 +44,26 @@ class Nic_einvoice
 	public function authenticate()
 	{
 		$app_key = $this->required('einv_app_key');
-		$encrypted = $this->encrypt_with_pem($app_key);
+		$credentials = json_encode(array(
+			'UserName' => $this->required('einv_username'),
+			'Password' => $this->required('einv_password'),
+			'AppKey' => $app_key,
+			'ForceRefreshAccessToken' => TRUE,
+		));
+		$encrypted = $this->encrypt_with_pem($credentials);
 		$response = $this->http('auth', array(
-			'action' => 'ACCESSTOKEN',
 			'Data' => base64_encode($encrypted),
-			'ForceRefreshAccessToken' => 'true',
-		), array('user_name' => $this->required('einv_username'), 'password' => $this->required('einv_password')));
-		if (empty($response['AuthToken']) || empty($response['Sek'])) {
-			throw new RuntimeException('NIC authentication failed.');
+		), array());
+		if ((string) $this->value($response, 'Status') !== '1') {
+			$message = isset($response['ErrorDetails']) ? json_encode($response['ErrorDetails']) : 'Unknown NIC error.';
+			throw new RuntimeException('NIC authentication failed: ' . $message);
 		}
-		$this->token = $response['AuthToken'];
-		$this->sek = $this->decrypt($response['Sek'], $app_key);
+		$data = isset($response['Data']) && is_array($response['Data']) ? $response['Data'] : array();
+		if (empty($data['AuthToken']) || empty($data['Sek'])) {
+			throw new RuntimeException('NIC authentication failed: missing AuthToken or Sek.');
+		}
+		$this->token = $data['AuthToken'];
+		$this->sek = $this->decrypt($data['Sek'], $app_key);
 	}
 
 	private function request($path, $payload)
@@ -70,8 +79,8 @@ class Nic_einvoice
 	private function http($path, $payload, $extra_headers)
 	{
 		$url = rtrim($this->required('einv_base_url'), '/') . '/' . trim($this->config['einv_paths'][$path], '/');
-		$headers = array('Content-Type: application/json', 'client-id: ' . $this->required('einv_client_id'),
-			'client-secret: ' . $this->required('einv_client_secret'), 'gstin: ' . $this->required('einv_gstin'));
+		$headers = array('Content-Type: application/json', 'client_id: ' . $this->required('einv_client_id'),
+			'client_secret: ' . $this->required('einv_client_secret'), 'Gstin: ' . $this->required('einv_gstin'));
 		foreach ($extra_headers as $name => $value) {
 			$headers[] = $name . ': ' . $value;
 		}
@@ -151,5 +160,10 @@ class Nic_einvoice
 			throw new RuntimeException('Missing e-invoice configuration: ' . $name);
 		}
 		return $value;
+	}
+
+	private function value($data, $key)
+	{
+		return isset($data[$key]) ? $data[$key] : NULL;
 	}
 }
