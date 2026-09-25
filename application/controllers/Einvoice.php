@@ -36,8 +36,8 @@ class Einvoice extends CI_Controller
 				throw new RuntimeException('Invoice was not found, lacks parties, or has no line items.');
 			}
 			$invoice = $this->invoice_payload($details);
-			$ewaybill = $this->ewaybill_payload($details);
-			$response = $this->nic_einvoice->generate($invoice, $ewaybill);
+			// E-way bill generation is disabled until transport details are mapped.
+			$response = $this->nic_einvoice->generate($invoice, NULL);
 			if (isset($response['Status']) && (string) $response['Status'] !== '1') {
 				throw new RuntimeException($this->nic_error($response));
 			}

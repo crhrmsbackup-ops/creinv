@@ -18,3 +18,6 @@ intentionally not included in the repository.
 
 The PEM key must match the selected API environment. Do not use a sandbox key
 with a production endpoint, or a production key with a sandbox endpoint.
+
+E-way bill generation is currently disabled until transport details are mapped
+from Oracle. The e-invoice is generated independently.
