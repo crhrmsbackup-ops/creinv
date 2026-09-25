@@ -7,7 +7,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * Keep the aliases stable because Invoice_model maps them to NIC's payload.
  */
 $config['invoice_queries'] = array(
-	'export' => "SELECT a.companyid exportname, a.add1, a.add2, a.add3, a.pin, b.cityname
+	'export' => "SELECT a.companyid exportname, a.add1, a.add2, a.add3, a.pin, b.cityname, a.gstno GSTIN
 		FROM exportmas a, citymast b, docinvmas c
 		WHERE a.add4 = b.citymastid AND c.expname = a.exportmasid AND c.docid = ?",
 	'consign' => "SELECT a.partyid, a.add1, a.add2, a.add3, a.pincode, b.cityname

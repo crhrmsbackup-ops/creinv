@@ -5,10 +5,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * Copy this file to einvoice_local.php and fill in the values supplied by
  * your NIC/GSP provider. Never commit the copied file.
  */
-$config['einv_gstin'] = '';
-$config['einv_client_id'] = '';
-$config['einv_client_secret'] = '';
-// AppKey is generated automatically for every authentication request.
-$config['einv_username'] = '';
-$config['einv_password'] = '';
+$config['einv_gstin'] = '33AABFC3692D2ZT';
+$config['einv_client_id'] = 'AABFC33TXPWRW11';
+$config['einv_client_secret'] = 'jXxl2RFf6t08NnbHVJDc';
+$config['einv_app_key'] = '';
+$config['einv_username'] = 'sltp_einvoice';
+$config['einv_password'] = 'Sltp*12345678';
+$config['public_key_path'] = APPPATH . "config/keys/einv_public_key.pem";
 $config['einv_export_country_code'] = 'US';
