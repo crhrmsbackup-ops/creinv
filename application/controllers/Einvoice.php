@@ -13,7 +13,7 @@ class Einvoice extends CI_Controller
 
 	/*
 	 * The Windows client calls:
-	 *   /index.php/einvoice/create/CRG%2FDOI%2F26-27%2F000010
+	 *   /index.php/einvoice/create/CRG/DOI/26-27/000010
 	 * No POST body is required.
 	 */
 	public function create($docid = NULL)
