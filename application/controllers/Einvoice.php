@@ -97,13 +97,7 @@ class Einvoice extends CI_Controller
 		return array(
 			'Irn' => '',
 			'Distance' => 0,
-			'TransMode' => 1,
-			'TransId' => '',
-			'TransName' => '',
-			'TransDocDt' => '',
-			'TransDocNo' => '',
-			'VehNo' => '',
-			'VehType' => 'R',
+			'TransMode' => '1',
 			'ExpShipDtls' => $this->eway_address($shipto),
 			'DispDtls' => $this->eway_address($seller),
 		);
