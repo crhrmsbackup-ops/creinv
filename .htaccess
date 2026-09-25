@@ -1,0 +1,72 @@
+<IfModule mod_env.c>
+    <If "%{SERVER_NAME} == 'localhost'">
+        SetEnv CI_ENV development
+    </If>
+    <Else>
+        SetEnv CI_ENV production
+    </Else>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+#RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.php [L]
+</IfModule>
+
+<IfModule mod_expires.c>
+
+# Enable expirations
+ExpiresActive On
+
+# Images
+ExpiresByType image/jpg "access plus 1 year"
+ExpiresByType image/jpeg "access plus 1 year"
+ExpiresByType image/gif "access plus 1 year"
+ExpiresByType image/png "access plus 1 year"
+ExpiresByType image/x-icon "access plus 1 year"
+
+# CSS
+ExpiresByType text/css "access plus 1 year"
+
+# Javascript
+ExpiresByType application/javascript "access plus 1 year"
+ExpiresByType text/x-javascript "access plus 1 month"
+ExpiresByType application/x-shockwave-flash "access plus 1 month"
+
+# Fonts
+ExpiresByType application/x-font-woff "access plus 1 year"
+ExpiresByType application/x-font-ttf "access plus 1 year"
+ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+
+ExpiresDefault "access plus 2 days"
+</IfModule>
+
+<IfModule mod_rewrite.c>
+RewriteCond %{HTTP_USER_AGENT} libwww-perl.* 
+RewriteRule .* ? [F,L]
+</IfModule>
+
+# mod_pagespeed configuration - Do NOT modify the contents
+<IfModule pagespeed_module>
+    ModPagespeedDomain *
+    ModPagespeed off
+</IfModule>
+# End of mod_pagespeed configuration- Do NOT modify the contents
+
+# compress text, html, javascript, css, xml:
+#AddOutputFilterByType DEFLATE text/plain
+#AddOutputFilterByType DEFLATE text/html
+#AddOutputFilterByType DEFLATE text/xml
+#AddOutputFilterByType DEFLATE text/css
+#AddOutputFilterByType DEFLATE application/xml
+#AddOutputFilterByType DEFLATE application/xhtml+xml
+#AddOutputFilterByType DEFLATE application/rss+xml
+#AddOutputFilterByType DEFLATE application/javascript
+#AddOutputFilterByType DEFLATE application/x-javascript
+
+# Or, compress certain file types by extension:
+#<files *.html>
+#SetOutputFilter DEFLATE
+#</files>
