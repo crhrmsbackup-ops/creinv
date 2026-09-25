@@ -38,6 +38,13 @@ class Einvoice extends CI_Controller
 			$invoice = $this->invoice_payload($details);
 			$ewaybill = $this->ewaybill_payload($details);
 			$response = $this->nic_einvoice->generate($invoice, $ewaybill);
+			if (isset($response['Status']) && (string) $response['Status'] !== '1') {
+				throw new RuntimeException($this->nic_error($response));
+			}
+			if (isset($response['ewaybill']['Status'])
+				&& (string) $response['ewaybill']['Status'] !== '1') {
+				throw new RuntimeException($this->nic_error($response['ewaybill']));
+			}
 			$this->Invoice_model->save_response($docid, $response);
 			return $this->output->set_status_header(200)->set_output(json_encode(array(
 				'success' => TRUE, 'invoice' => $docid, 'response' => $response,
@@ -148,5 +155,13 @@ class Einvoice extends CI_Controller
 		return $this->output->set_status_header($status)->set_output(json_encode(array(
 			'success' => FALSE, 'error' => $message,
 		)));
+	}
+
+	private function nic_error($response)
+	{
+		if (!empty($response['ErrorDetails'])) {
+			return json_encode($response['ErrorDetails']);
+		}
+		return 'NIC rejected the request.';
 	}
 }

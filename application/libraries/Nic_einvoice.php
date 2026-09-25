@@ -82,7 +82,10 @@ class Nic_einvoice
 			'Data' => base64_encode($this->encrypt($json, $this->sek)),
 			'Sek' => $this->encrypt_rsa($this->sek),
 			'Gstin' => $this->required('einv_gstin'),
-		), array('auth-token' => $this->token)));
+		), array(
+			'auth-token' => $this->token,
+			'user_name' => $this->required('einv_username'),
+		)));
 	}
 
 	private function http($path, $payload, $extra_headers)
@@ -163,7 +166,10 @@ class Nic_einvoice
 				return $data;
 			}
 		}
-		return isset($response['Data']) && is_array($response['Data']) ? $response['Data'] : $response;
+		if (isset($response['Data']) && is_array($response['Data'])) {
+			return $response['Data'];
+		}
+		return $response;
 	}
 
 	private function required($name)
