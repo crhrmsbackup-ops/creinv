@@ -7,7 +7,6 @@ class Nic_einvoice
 	private $config;
 	private $token;
 	private $sek;
-	private $encrypted_sek;
 
 	public function __construct()
 	{
@@ -72,8 +71,7 @@ class Nic_einvoice
 		if (empty($data['AuthToken']) || empty($data['Sek'])) {
 			throw new RuntimeException('NIC authentication failed: missing AuthToken or Sek.');
 		}
-		$this->token = $data['AuthToken'];
-		$this->encrypted_sek = $data['Sek'];
+		$this->token = trim($data['AuthToken']);
 		$this->sek = $this->decrypt($data['Sek'], $app_key);
 	}
 
@@ -82,7 +80,6 @@ class Nic_einvoice
 		$json = json_encode($payload);
 		return $this->decode($this->http($path, array(
 			'Data' => base64_encode($this->encrypt($json, $this->sek)),
-			'Sek' => $this->encrypted_sek,
 		), array(
 			'auth-token' => $this->token,
 			'user_name' => $this->required('einv_username'),
