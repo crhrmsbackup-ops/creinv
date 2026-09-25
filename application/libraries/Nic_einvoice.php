@@ -80,11 +80,12 @@ class Nic_einvoice
 		$json = json_encode($payload);
 		return $this->decode($this->http($path, array(
 			'Data' => base64_encode($this->encrypt($json, $this->sek)),
-			'Sek' => $this->encrypt_rsa($this->sek),
-			'Gstin' => $this->required('einv_gstin'),
 		), array(
 			'auth-token' => $this->token,
 			'user_name' => $this->required('einv_username'),
+			'client-id' => $this->required('einv_client_id'),
+			'client-secret' => $this->required('einv_client_secret'),
+			'gstin' => $this->required('einv_gstin'),
 		)));
 	}
 
@@ -119,11 +120,6 @@ class Nic_einvoice
 	private function encrypt($plain, $key)
 	{
 		return openssl_encrypt($plain, 'AES-256-ECB', base64_decode($key), OPENSSL_RAW_DATA);
-	}
-
-	private function encrypt_rsa($value)
-	{
-		return base64_encode($this->encrypt_with_pem($value));
 	}
 
 	private function encrypt_with_pem($value)
