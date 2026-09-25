@@ -35,14 +35,16 @@ class Nic_einvoice
 		return $result;
 	}
 
-	private function authenticate()
+	/**
+	 * Authenticate with NIC using the configured PEM public key.
+	 *
+	 * The PEM key encrypts the AppKey; NIC uses that value to return an
+	 * encrypted session key (Sek), which is then used for API payloads.
+	 */
+	public function authenticate()
 	{
 		$app_key = $this->required('einv_app_key');
-		$encrypted = '';
-		$key = file_get_contents($this->required('einv_public_key_path'));
-		if (!openssl_public_encrypt($app_key, $encrypted, $key, OPENSSL_PKCS1_PADDING)) {
-			throw new RuntimeException('Unable to encrypt NIC application key.');
-		}
+		$encrypted = $this->encrypt_with_pem($app_key);
 		$response = $this->http('auth', array(
 			'action' => 'ACCESSTOKEN',
 			'Data' => base64_encode($encrypted),
@@ -100,12 +102,25 @@ class Nic_einvoice
 
 	private function encrypt_rsa($value)
 	{
-		$encrypted = '';
-		$key = file_get_contents($this->required('einv_public_key_path'));
-		if (!openssl_public_encrypt($value, $encrypted, $key, OPENSSL_PKCS1_PADDING)) {
-			throw new RuntimeException('Unable to encrypt NIC session key.');
+		return base64_encode($this->encrypt_with_pem($value));
+	}
+
+	private function encrypt_with_pem($value)
+	{
+		$path = $this->required('einv_public_key_path');
+		if (!is_readable($path)) {
+			throw new RuntimeException('NIC public PEM key is not readable: ' . $path);
 		}
-		return base64_encode($encrypted);
+		$key_data = file_get_contents($path);
+		$key = openssl_pkey_get_public($key_data);
+		if ($key === FALSE) {
+			throw new RuntimeException('NIC public PEM key is invalid: ' . $path);
+		}
+		$encrypted = '';
+		if (!openssl_public_encrypt($value, $encrypted, $key, OPENSSL_PKCS1_PADDING)) {
+			throw new RuntimeException('Unable to encrypt data with NIC public PEM key.');
+		}
+		return $encrypted;
 	}
 
 	private function decrypt($value, $key)
