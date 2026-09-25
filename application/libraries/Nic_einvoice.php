@@ -84,7 +84,7 @@ class Nic_einvoice
 		return $this->decode($this->http($path, array(
 			'Data' => base64_encode($this->encrypt($json, $this->sek)),
 		), array(
-			'auth-token' => $this->token,
+			'AuthToken' => $this->token,
 			'user_name' => $this->authenticated_user,
 		)));
 	}
