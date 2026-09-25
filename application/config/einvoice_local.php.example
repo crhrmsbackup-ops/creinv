@@ -1,0 +1,13 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/*
+ * Copy this file to einvoice_local.php and fill in the values supplied by
+ * your NIC/GSP provider. Never commit the copied file.
+ */
+$config['einv_gstin'] = '';
+$config['einv_client_id'] = '';
+$config['einv_client_secret'] = '';
+$config['einv_app_key'] = '';
+$config['einv_username'] = '';
+$config['einv_password'] = '';
