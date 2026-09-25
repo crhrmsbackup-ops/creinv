@@ -8,6 +8,6 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 $config['einv_gstin'] = '';
 $config['einv_client_id'] = '';
 $config['einv_client_secret'] = '';
-$config['einv_app_key'] = '';
+// AppKey is generated automatically for every authentication request.
 $config['einv_username'] = '';
 $config['einv_password'] = '';

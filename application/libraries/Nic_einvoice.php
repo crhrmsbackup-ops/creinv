@@ -43,7 +43,7 @@ class Nic_einvoice
 	 */
 	public function authenticate()
 	{
-		$app_key = $this->required('einv_app_key');
+		$app_key = $this->generate_app_key();
 		$credentials = json_encode(array(
 			'UserName' => $this->required('einv_username'),
 			'Password' => $this->required('einv_password'),
@@ -165,5 +165,18 @@ class Nic_einvoice
 	private function value($data, $key)
 	{
 		return isset($data[$key]) ? $data[$key] : NULL;
+	}
+
+	private function generate_app_key()
+	{
+		if (function_exists('random_bytes')) {
+			$bytes = random_bytes(32);
+		} else {
+			$bytes = openssl_random_pseudo_bytes(32);
+		}
+		if ($bytes === FALSE || strlen($bytes) !== 32) {
+			throw new RuntimeException('Unable to generate a secure NIC AppKey.');
+		}
+		return base64_encode($bytes);
 	}
 }
