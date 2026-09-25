@@ -53,7 +53,9 @@ class Nic_einvoice
 		if ($credentials === FALSE) {
 			throw new RuntimeException('Unable to create NIC authentication JSON.');
 		}
-		$encrypted = $this->encrypt_with_pem($credentials);
+		// NIC requires Base64(credentials JSON) as the RSA plaintext.
+		$encoded_credentials = base64_encode($credentials);
+		$encrypted = $this->encrypt_with_pem($encoded_credentials);
 		$encoded = base64_encode($encrypted);
 		if ($encoded === FALSE || base64_decode($encoded, TRUE) === FALSE) {
 			throw new RuntimeException('Unable to create valid Base64 NIC authentication data.');
