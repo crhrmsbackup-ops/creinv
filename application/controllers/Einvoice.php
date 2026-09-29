@@ -18,7 +18,6 @@ class Einvoice extends CI_Controller
 	 */
 	public function create($docid = NULL)
 	{
-		$this->output->set_content_type('application/json');
 		$segments = func_get_args();
 		if (count($segments) > 1) {
 			$docid = implode('/', $segments);
@@ -26,6 +25,13 @@ class Einvoice extends CI_Controller
 		if (!$docid) {
 			$docid = $this->input->get('invoice', TRUE);
 		}
+		if ($this->wants_progress_page()) {
+			$this->output->set_content_type('text/html', 'UTF-8');
+			return $this->output->set_output($this->load->view('einvoice_progress', array(
+				'invoice' => $docid ? $docid : '',
+			), TRUE));
+		}
+		$this->output->set_content_type('application/json');
 		if (!$docid || !preg_match('/^[A-Za-z0-9\/_.-]+$/', $docid)) {
 			return $this->json_error('A valid invoice number is required.', 400);
 		}
@@ -48,6 +54,19 @@ class Einvoice extends CI_Controller
 			$this->Invoice_model->save_error($docid, $exception->getMessage());
 			return $this->json_error($exception->getMessage(), 502);
 		}
+	}
+
+	private function wants_progress_page()
+	{
+		$format = strtolower((string) $this->input->get('format', TRUE));
+		if ($format === 'json') {
+			return FALSE;
+		}
+		if ($format === 'html') {
+			return TRUE;
+		}
+		$accept = strtolower((string) $this->input->server('HTTP_ACCEPT'));
+		return strpos($accept, 'text/html') !== FALSE && strpos($accept, 'application/json') === FALSE;
 	}
 
 	private function invoice_payload($data)

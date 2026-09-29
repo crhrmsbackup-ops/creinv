@@ -13,10 +13,11 @@
    treated as the invoice number; slashes are not discarded. A query-string
    call is also supported: `index.php/einvoice/create?invoice=CRG%2FDOI%2F26-27%2F000010`.
 
-The endpoint accepts only a URL invoice number and does not need a POST body.
-It returns JSON and writes the IRN, acknowledgement, signed QR code, status,
-and full response into `DOCINVMAS`. Credentials are
-intentionally not included in the repository.
+Browser requests display a progress page followed by the e-invoice success or
+error result. Programmatic callers can request JSON using
+`?format=json`; the endpoint does not need a POST body. Successful responses
+write the IRN, acknowledgement, signed QR code, status, and full response into
+`DOCINVMAS`. Credentials are intentionally not included in the repository.
 
 The PEM key must match the selected API environment. Do not use a sandbox key
 with a production endpoint, or a production key with a sandbox endpoint.
