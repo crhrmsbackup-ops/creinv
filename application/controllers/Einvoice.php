@@ -44,14 +44,7 @@ class Einvoice extends CI_Controller
 			}
 			
 			$invoice = $this->invoice_payload($details);
-<<<<<<< HEAD
-
-
-			// E-way bill generation is disabled until transport details are mapped.
-			$response = $this->nic_einvoice->generate($invoice, NULL);
-=======
 			$response = $this->nic_einvoice->generate($invoice);
->>>>>>> 91629e1876aa1db8b7504a32dee08302802ac52e
 			if (isset($response['Status']) && (string) $response['Status'] !== '1') {
 				throw new RuntimeException($this->nic_error($response));
 			}
@@ -104,34 +97,19 @@ class Einvoice extends CI_Controller
 			}
 		}
 		$items = array();
-		$assessable = 0;
-		$tax_total = 0;
-		foreach ($data['grid'] as $index => $row) {
-			$amount = (float) $this->field($row, 'AMOUNT', 0);
-			$assessable += $amount;
-			$gst_rate = (float) $this->field($row, 'GSTRATE', 0);
-			$tax = $amount * $gst_rate / 100;
-			$tax_total += $tax;
-			$items[] = array(
-				'SlNo' => (string) ($index + 1),
-				'PrdDesc' => $this->field($row, 'DESGOODS', ''),
-				'IsServc' => 'N',
-				'HsnCd' => $this->field($row, 'HSN', ''),
-				'Qty' => (float) $this->field($row, 'INVOICEQTY', 0),
-				'Unit' => 'PCS',
-				'UnitPrice' => (float) $this->field($row, 'RATE', 0),
-				'TotAmt' => $amount,
-				'Discount' => 0,
-				'AssAmt' => $amount,
-				'GstRt' => $gst_rate,
-				'IgstAmt' => $is_export || $seller_state !== $buyer_state ? $tax : 0,
-				'CgstAmt' => !$is_export && $seller_state === $buyer_state ? $tax / 2 : 0,
-				'SgstAmt' => !$is_export && $seller_state === $buyer_state ? $tax / 2 : 0,
-				'CesRt' => 0,
-				'CesAmt' => 0,
-				'TotItemVal' => $amount + $tax,
-			);
+		$item_fields = array(
+			'SlNo', 'PrdDesc', 'IsServc', 'HsnCd', 'Qty', 'Unit', 'UnitPrice',
+			'TotAmt', 'Discount', 'AssAmt', 'GstRt', 'IgstAmt', 'CgstAmt',
+			'SgstAmt', 'CesRt', 'CesAmt', 'TotItemVal',
+		);
+		foreach ($data['grid'] as $row) {
+			$item = $this->nic_fields($row, $item_fields);
+			$this->require_fields($item, $item_fields, 'ItemList');
+			$items[] = $item;
 		}
+		$value_fields = array('AssVal', 'CgstVal', 'SgstVal', 'IgstVal', 'CesVal', 'Discount', 'TotInvVal');
+		$value_details = $this->nic_fields($footer, $value_fields);
+		$this->require_fields($value_details, $value_fields, 'ValDtls');
 		$payload = array(
 			'Version' => '1.1',
 			'TranDtls' => array(
@@ -145,15 +123,7 @@ class Einvoice extends CI_Controller
 			'SellerDtls' => $this->party($seller, $seller_gstin, $seller_state),
 			'BuyerDtls' => array_merge($this->party($buyer, $buyer_gstin), array('Pos' => $buyer_state)),
 			'ItemList' => $items,
-			'ValDtls' => array(
-				'AssVal' => $assessable,
-				'CgstVal' => !$is_export && $seller_state === $buyer_state ? $tax_total / 2 : 0,
-				'SgstVal' => !$is_export && $seller_state === $buyer_state ? $tax_total / 2 : 0,
-				'IgstVal' => $is_export || $seller_state !== $buyer_state ? $tax_total : 0,
-				'CesVal' => 0,
-				'Discount' => 0,
-				'TotInvVal' => $assessable + $tax_total,
-			),
+			'ValDtls' => $value_details,
 		);
 		if ($is_export) {
 			$payload['ExpDtls'] = array(
@@ -163,6 +133,34 @@ class Einvoice extends CI_Controller
 			);
 		}
 		return $payload;
+	}
+
+	private function nic_fields($row, $allowed_fields)
+	{
+		$values = array();
+		foreach ($row as $key => $value) {
+			$normalized_key = strtoupper((string) $key);
+			foreach ($allowed_fields as $field) {
+				if ($normalized_key === strtoupper($field)) {
+					$values[$field] = $value;
+					break;
+				}
+			}
+		}
+		return $values;
+	}
+
+	private function require_fields($values, $required_fields, $section)
+	{
+		$missing = array();
+		foreach ($required_fields as $field) {
+			if (!array_key_exists($field, $values)) {
+				$missing[] = $field;
+			}
+		}
+		if ($missing) {
+			throw new RuntimeException($section . ' query is missing NIC fields: ' . implode(', ', $missing) . '.');
+		}
 	}
 
 	private function state_code($gstin)

@@ -28,3 +28,10 @@ after the required transport fields are mapped from Oracle.
 Invoice classification uses `DOCINVMAS.TYPE`: `EXPORT` creates an export
 invoice; other values are domestic. Domestic invoices compare the first two
 GSTIN characters to choose intra-state (CGST/SGST) or inter-state (IGST).
+The `grid` query must return the NIC `ItemList` fields (`SlNo`, `PrdDesc`,
+`IsServc`, `HsnCd`, `Qty`, `Unit`, `UnitPrice`, `TotAmt`, `Discount`, `AssAmt`,
+`GstRt`, `IgstAmt`, `CgstAmt`, `SgstAmt`, `CesRt`, `CesAmt`, `TotItemVal`).
+The `footer` query must return `AssVal`, `CgstVal`, `SgstVal`, `IgstVal`,
+`CesVal`, `Discount`, and `TotInvVal` for `ValDtls`, plus `LUTNO` to choose
+the export supply type. Field aliases are matched case-insensitively and
+converted to NIC's required JSON field casing.
