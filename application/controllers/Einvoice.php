@@ -55,22 +55,34 @@ class Einvoice extends CI_Controller
 		$header = $data['header'][0];
 		$seller = $data['export'][0];
 		$buyer = $data['buyer'][0];
+		$footer = isset($data['footer'][0]) ? $data['footer'][0] : array();
 		$seller_gstin = $this->field($seller, 'GSTIN', $this->config->item('einv_gstin'));
-		$buyer_gstin = $this->field($buyer, 'GSTIN', 'URP');
-		$buyer_state = $this->state_code($buyer_gstin);
-		$country_code = strtoupper(trim((string) $this->field($header, 'COUNTRYFINAL', '')));
-		if (!preg_match('/^[A-Z]{2}$/', $country_code)) {
-			$country_code = strtoupper(trim((string) $this->config->item('einv_export_country_code')));
+		$seller_state = $this->state_code($seller_gstin);
+		$is_export = strtoupper(trim((string) $this->field($header, 'TYPE', ''))) === 'EXPORT';
+		$buyer_gstin = $this->field($buyer, 'GSTIN', $is_export ? 'URP' : '');
+		$buyer_state = $is_export ? '96' : $this->state_code($buyer_gstin);
+		if (!$seller_state || (!$is_export && !$buyer_state)) {
+			throw new RuntimeException('Invoice requires valid seller and buyer GSTIN state codes.');
 		}
-		if (!$seller_gstin || strlen($seller_gstin) !== 15 || !$buyer_state
-			|| !preg_match('/^[A-Z]{2}$/', $country_code)) {
-			throw new RuntimeException('Invoice requires seller GSTIN, buyer state code, and two-letter destination country code.');
+		$country_code = '';
+		if ($is_export) {
+			$country_code = strtoupper(trim((string) $this->field($header, 'COUNTRYFINAL', '')));
+			if (!preg_match('/^[A-Z]{2}$/', $country_code)) {
+				$country_code = strtoupper(trim((string) $this->config->item('einv_export_country_code')));
+			}
+			if (!preg_match('/^[A-Z]{2}$/', $country_code)) {
+				throw new RuntimeException('Export invoice requires a two-letter destination country code.');
+			}
 		}
 		$items = array();
 		$assessable = 0;
+		$tax_total = 0;
 		foreach ($data['grid'] as $index => $row) {
 			$amount = (float) $this->field($row, 'AMOUNT', 0);
 			$assessable += $amount;
+			$gst_rate = (float) $this->field($row, 'GSTRATE', 0);
+			$tax = $amount * $gst_rate / 100;
+			$tax_total += $tax;
 			$items[] = array(
 				'SlNo' => (string) ($index + 1),
 				'PrdDesc' => $this->field($row, 'DESGOODS', ''),
@@ -80,24 +92,48 @@ class Einvoice extends CI_Controller
 				'Unit' => 'PCS',
 				'UnitPrice' => (float) $this->field($row, 'RATE', 0),
 				'TotAmt' => $amount,
+				'Discount' => 0,
 				'AssAmt' => $amount,
-				'TotItemVal' => $amount,
+				'GstRt' => $gst_rate,
+				'IgstAmt' => $is_export || $seller_state !== $buyer_state ? $tax : 0,
+				'CgstAmt' => !$is_export && $seller_state === $buyer_state ? $tax / 2 : 0,
+				'SgstAmt' => !$is_export && $seller_state === $buyer_state ? $tax / 2 : 0,
+				'CesRt' => 0,
+				'CesAmt' => 0,
+				'TotItemVal' => $amount + $tax,
 			);
 		}
-		return array(
+		$payload = array(
 			'Version' => '1.1',
-			'TranDtls' => array('TaxSch' => 'GST', 'SupTyp' => 'EXP'),
+			'TranDtls' => array(
+				'TaxSch' => 'GST',
+				'SupTyp' => $is_export ? ($this->field($footer, 'LUTNO', '') ? 'EXPWOP' : 'EXPWP') : 'B2B',
+				'RegRev' => 'N',
+				'EcmGstin' => NULL,
+				'IgstOnIntra' => 'N',
+			),
 			'DocDtls' => array('Typ' => 'INV', 'No' => $header['INVOICENO'], 'Dt' => $this->date($header['DOCDATE'])),
-			'SellerDtls' => $this->party($seller, $seller_gstin),
+			'SellerDtls' => $this->party($seller, $seller_gstin, $seller_state),
 			'BuyerDtls' => array_merge($this->party($buyer, $buyer_gstin), array('Pos' => $buyer_state)),
-			'ExpDtls' => array(
+			'ItemList' => $items,
+			'ValDtls' => array(
+				'AssVal' => $assessable,
+				'CgstVal' => !$is_export && $seller_state === $buyer_state ? $tax_total / 2 : 0,
+				'SgstVal' => !$is_export && $seller_state === $buyer_state ? $tax_total / 2 : 0,
+				'IgstVal' => $is_export || $seller_state !== $buyer_state ? $tax_total : 0,
+				'CesVal' => 0,
+				'Discount' => 0,
+				'TotInvVal' => $assessable + $tax_total,
+			),
+		);
+		if ($is_export) {
+			$payload['ExpDtls'] = array(
 				'RefClm' => FALSE,
 				'CntCode' => $country_code,
 				'ForCur' => $this->config->item('einv_default_export_currency'),
-			),
-			'ItemList' => $items,
-			'ValDtls' => array('AssVal' => $assessable, 'IgstVal' => 0, 'TotInvVal' => $assessable),
-		);
+			);
+		}
+		return $payload;
 	}
 
 	private function state_code($gstin)
@@ -109,16 +145,17 @@ class Einvoice extends CI_Controller
 			? substr($gstin, 0, 2) : '';
 	}
 
-	private function party($row, $default_gstin)
+	private function party($row, $default_gstin, $default_state = NULL)
 	{
+		$gstin = $this->field($row, 'GSTIN', $default_gstin);
 		return array(
-			'Gstin' => $this->field($row, 'GSTIN', $default_gstin),
+			'Gstin' => $gstin,
 			'LglNm' => $this->field($row, 'PARTYID', $this->field($row, 'EXPORTNAME', '')),
 			'Addr1' => $this->field($row, 'ADD1', ''),
 			'Addr2' => $this->field($row, 'ADD2', ''),
 			'Loc' => $this->field($row, 'CITYNAME', ''),
 			'Pin' => (int) $this->field($row, 'PINCODE', $this->field($row, 'PIN', 0)),
-			'Stcd' => $this->state_code($this->field($row, 'GSTIN', 'URP')),
+			'Stcd' => $default_state ? $default_state : $this->state_code($gstin),
 		);
 	}
 

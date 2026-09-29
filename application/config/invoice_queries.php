@@ -7,19 +7,19 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * Keep the aliases stable because Invoice_model maps them to NIC's payload.
  */
 $config['invoice_queries'] = array(
-	'export' => "SELECT a.companyid exportname, a.add1, a.add2, a.add3, a.pin, b.cityname
+	'export' => "SELECT a.companyid exportname, a.gstin, a.add1, a.add2, a.add3, a.pin, b.cityname
 		FROM exportmas a, citymast b, docinvmas c
 		WHERE a.add4 = b.citymastid AND c.expname = a.exportmasid AND c.docid = ?",
-	'consign' => "SELECT a.partyid, a.add1, a.add2, a.add3, a.pincode, b.cityname
+	'consign' => "SELECT a.partyid, a.gstin, a.add1, a.add2, a.add3, a.pincode, b.cityname
 		FROM consignmas a, citymast b, docinvmas c
 		WHERE a.city = b.citymastid(+) AND c.consignee = a.consignmasid AND c.docid = ?",
-	'shipto' => "SELECT a.partyid, a.add1, a.add2, a.add3, a.pincode, b.cityname
+	'shipto' => "SELECT a.partyid, a.gstin, a.add1, a.add2, a.add3, a.pincode, b.cityname
 		FROM invbuymas a, citymast b, docinvmas c
 		WHERE a.city = b.citymastid(+) AND c.shiptto = a.invbuymasid AND c.docid = ?",
-	'buyer' => "SELECT a.partyid, a.add1, a.add2, a.add3, a.pincode, b.cityname
+	'buyer' => "SELECT a.partyid, a.gstin, a.add1, a.add2, a.add3, a.pincode, b.cityname
 		FROM invbuymas a, citymast b, docinvmas c
 		WHERE a.city = b.citymastid(+) AND c.buycon = a.invbuymasid AND c.docid = ?",
-	'header' => "SELECT a.docid invoiceno, a.docdate, b.ieno iecode, a.pono, a.buypo buyerpono,
+	'header' => "SELECT a.docid invoiceno, a.docdate, a.type, b.ieno iecode, a.pono, a.buypo buyerpono,
 		c.season, a.otherref, a.precar, d.cityname placeofreceipt, a.vessel, e.port portofloading,
 		f.port portofdischarge, g.countryname countryoforigin, h.countryname countryfinal, i.termname
 		FROM docinvmas a, exportmas b, seasonmas c, citymast d, invportmas e, invportmas f,

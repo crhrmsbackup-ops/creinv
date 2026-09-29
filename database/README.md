@@ -23,3 +23,7 @@ with a production endpoint, or a production key with a sandbox endpoint.
 
 E-way bill generation is not part of the current endpoint. Add it separately
 after the required transport fields are mapped from Oracle.
+
+Invoice classification uses `DOCINVMAS.TYPE`: `EXPORT` creates an export
+invoice; other values are domestic. Domestic invoices compare the first two
+GSTIN characters to choose intra-state (CGST/SGST) or inter-state (IGST).
