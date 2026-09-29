@@ -37,12 +37,21 @@ class Einvoice extends CI_Controller
 		}
 		try {
 			$details = $this->Invoice_model->details($docid);
+
 			if (empty($details['header'][0]) || empty($details['grid'])
 				|| empty($details['export'][0]) || empty($details['buyer'][0])) {
 				throw new RuntimeException('Invoice was not found, lacks parties, or has no line items.');
 			}
+			
 			$invoice = $this->invoice_payload($details);
+<<<<<<< HEAD
+
+
+			// E-way bill generation is disabled until transport details are mapped.
+			$response = $this->nic_einvoice->generate($invoice, NULL);
+=======
 			$response = $this->nic_einvoice->generate($invoice);
+>>>>>>> 91629e1876aa1db8b7504a32dee08302802ac52e
 			if (isset($response['Status']) && (string) $response['Status'] !== '1') {
 				throw new RuntimeException($this->nic_error($response));
 			}
@@ -76,6 +85,7 @@ class Einvoice extends CI_Controller
 		$buyer = $data['buyer'][0];
 		$footer = isset($data['footer'][0]) ? $data['footer'][0] : array();
 		$seller_gstin = $this->field($seller, 'GSTIN', $this->config->item('einv_gstin'));
+
 		$seller_state = $this->state_code($seller_gstin);
 		$is_export = strtoupper(trim((string) $this->field($header, 'TYPE', ''))) === 'EXPORT';
 		$buyer_gstin = $this->field($buyer, 'GSTIN', $is_export ? 'URP' : '');
