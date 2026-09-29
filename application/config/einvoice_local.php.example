@@ -13,3 +13,4 @@ $config['einv_username'] = 'sltp_einvoice';
 $config['einv_password'] = 'Sltp*12345678';
 $config['public_key_path'] = APPPATH . "config/keys/einv_public_key.pem";
 $config['einv_export_country_code'] = 'US';
+
