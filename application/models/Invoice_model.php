@@ -27,7 +27,6 @@ class Invoice_model extends CI_Model
 	{
 		$sql = 'UPDATE DOCINVMAS SET
 			EINV_IRN = ?, EINV_ACK_NO = ?, EINV_ACK_DATE = ?, EINV_QR_CODE = ?,
-			EWAY_BILL_NO = ?, EWAY_BILL_DATE = ?, EWAY_VALID_UPTO = ?,
 			EINV_STATUS = ?, EINV_RESPONSE = ?, EINV_UPDATED_AT = ?
 			WHERE DOCID = ?';
 		$binds = array(
@@ -35,9 +34,6 @@ class Invoice_model extends CI_Model
 			$this->value($response, 'AckNo'),
 			$this->oracle_date($this->value($response, 'AckDt')),
 			$this->value($response, 'SignedQRCode'),
-			$this->value($response, 'EwbNo'),
-			$this->oracle_date($this->value($response, 'EwbDt')),
-			$this->oracle_date($this->value($response, 'EwbValidTill')),
 			'SUCCESS',
 			json_encode($response),
 			date('Y-m-d H:i:s'),

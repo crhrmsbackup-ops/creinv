@@ -15,25 +15,16 @@ class Nic_einvoice
 		$this->CI->config->load('einvoice');
 		$this->config = array();
 		foreach (array('einv_env', 'einv_base_url', 'einv_public_key_path', 'einv_gstin',
-			'einv_client_id', 'einv_client_secret', 'einv_app_key', 'einv_username',
-			'einv_password', 'einv_paths') as $key) {
+			'einv_client_id', 'einv_client_secret', 'einv_username', 'einv_password',
+			'einv_paths') as $key) {
 			$this->config[$key] = $this->CI->config->item($key);
 		}
 	}
 
-	public function generate($invoice, $ewaybill)
+	public function generate($invoice)
 	{
 		$this->authenticate();
-		$invoice_response = $this->request('generate_invoice', $invoice);
-		$result = $invoice_response;
-		if ($ewaybill) {
-			$ewaybill['Irn'] = isset($invoice_response['Irn']) ? $invoice_response['Irn'] : '';
-			$result['ewaybill'] = $this->request('generate_ewaybill', $ewaybill, TRUE);
-			if (is_array($result['ewaybill'])) {
-				$result = array_merge($result, $result['ewaybill']);
-			}
-		}
-		return $result;
+		return $this->request('generate_invoice', $invoice);
 	}
 
 	/**
@@ -78,19 +69,18 @@ class Nic_einvoice
 		$this->sek = $this->decrypt($data['Sek'], $app_key);
 	}
 
-	private function request($path, $payload, $ewaybill = FALSE)
+	private function request($path, $payload)
 	{
 		$json = json_encode($payload);
-		$headers = array(
-			'AuthToken' => $this->token,
-			'user_name' => $this->authenticated_user,
-		);
-		if ($ewaybill && !empty($this->config['einv_sup_gstin'])) {
-			$headers['sup_gstin'] = $this->config['einv_sup_gstin'];
+		if ($json === FALSE) {
+			throw new RuntimeException('Unable to encode NIC invoice JSON.');
 		}
 		return $this->decode($this->http($path, array(
 			'Data' => base64_encode($this->encrypt($json, $this->sek)),
-		), $headers));
+		), array(
+			'AuthToken' => $this->token,
+			'user_name' => $this->authenticated_user,
+		)));
 	}
 
 	private function http($path, $payload, $extra_headers)
@@ -123,7 +113,11 @@ class Nic_einvoice
 
 	private function encrypt($plain, $key)
 	{
-		return openssl_encrypt($plain, 'AES-256-ECB', base64_decode($key), OPENSSL_RAW_DATA);
+		$encrypted = openssl_encrypt($plain, 'AES-256-ECB', base64_decode($key), OPENSSL_RAW_DATA);
+		if ($encrypted === FALSE) {
+			throw new RuntimeException('Unable to encrypt NIC invoice data.');
+		}
+		return $encrypted;
 	}
 
 	private function encrypt_with_pem($value)
@@ -150,7 +144,12 @@ class Nic_einvoice
 
 	private function decrypt($value, $key)
 	{
-		$plain = openssl_decrypt(base64_decode($value), 'AES-256-ECB', base64_decode($key), OPENSSL_RAW_DATA);
+		$ciphertext = base64_decode($value, TRUE);
+		$secret = base64_decode($key, TRUE);
+		if ($ciphertext === FALSE || $secret === FALSE) {
+			throw new RuntimeException('NIC returned invalid encrypted session data.');
+		}
+		$plain = openssl_decrypt($ciphertext, 'AES-256-ECB', $secret, OPENSSL_RAW_DATA);
 		if ($plain === FALSE) {
 			throw new RuntimeException('Unable to decrypt NIC session key.');
 		}

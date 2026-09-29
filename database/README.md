@@ -14,12 +14,12 @@
    call is also supported: `index.php/einvoice/create?invoice=CRG%2FDOI%2F26-27%2F000010`.
 
 The endpoint accepts only a URL invoice number and does not need a POST body.
-It returns JSON and writes the IRN, acknowledgement, signed QR code, e-way
-bill values, status, and full response into `DOCINVMAS`. Credentials are
+It returns JSON and writes the IRN, acknowledgement, signed QR code, status,
+and full response into `DOCINVMAS`. Credentials are
 intentionally not included in the repository.
 
 The PEM key must match the selected API environment. Do not use a sandbox key
 with a production endpoint, or a production key with a sandbox endpoint.
 
-E-way bill generation is currently disabled until transport details are mapped
-from Oracle. The e-invoice is generated independently.
+E-way bill generation is not part of the current endpoint. Add it separately
+after the required transport fields are mapped from Oracle.

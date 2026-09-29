@@ -36,14 +36,9 @@ class Einvoice extends CI_Controller
 				throw new RuntimeException('Invoice was not found, lacks parties, or has no line items.');
 			}
 			$invoice = $this->invoice_payload($details);
-			// E-way bill generation is disabled until transport details are mapped.
-			$response = $this->nic_einvoice->generate($invoice, NULL);
+			$response = $this->nic_einvoice->generate($invoice);
 			if (isset($response['Status']) && (string) $response['Status'] !== '1') {
 				throw new RuntimeException($this->nic_error($response));
-			}
-			if (isset($response['ewaybill']['Status'])
-				&& (string) $response['ewaybill']['Status'] !== '1') {
-				throw new RuntimeException($this->nic_error($response['ewaybill']));
 			}
 			$this->Invoice_model->save_response($docid, $response);
 			return $this->output->set_status_header(200)->set_output(json_encode(array(
@@ -63,9 +58,10 @@ class Einvoice extends CI_Controller
 		$seller_gstin = $this->field($seller, 'GSTIN', $this->config->item('einv_gstin'));
 		$buyer_gstin = $this->field($buyer, 'GSTIN', 'URP');
 		$buyer_state = $this->state_code($buyer_gstin);
-		$country_code = strtoupper(trim((string) $this->field(
-			$header, 'COUNTRYFINAL', $this->config->item('einv_export_country_code')
-		)));
+		$country_code = strtoupper(trim((string) $this->field($header, 'COUNTRYFINAL', '')));
+		if (!preg_match('/^[A-Z]{2}$/', $country_code)) {
+			$country_code = strtoupper(trim((string) $this->config->item('einv_export_country_code')));
+		}
 		if (!$seller_gstin || strlen($seller_gstin) !== 15 || !$buyer_state
 			|| !preg_match('/^[A-Z]{2}$/', $country_code)) {
 			throw new RuntimeException('Invoice requires seller GSTIN, buyer state code, and two-letter destination country code.');
@@ -101,32 +97,6 @@ class Einvoice extends CI_Controller
 			),
 			'ItemList' => $items,
 			'ValDtls' => array('AssVal' => $assessable, 'IgstVal' => 0, 'TotInvVal' => $assessable),
-		);
-	}
-
-	private function ewaybill_payload($data)
-	{
-		$header = $data['header'][0];
-		$seller = $data['export'][0];
-		$buyer = $data['buyer'][0];
-		$shipto = isset($data['shipto'][0]) ? $data['shipto'][0] : $buyer;
-		return array(
-			'Irn' => '',
-			'Distance' => 0,
-			'TransMode' => '1',
-			'ExpShipDtls' => $this->eway_address($shipto),
-			'DispDtls' => $this->eway_address($seller),
-		);
-	}
-
-	private function eway_address($row)
-	{
-		return array(
-			'Addr1' => $this->field($row, 'ADD1', ''),
-			'Addr2' => $this->field($row, 'ADD2', ''),
-			'Loc' => $this->field($row, 'CITYNAME', ''),
-			'Pin' => (int) $this->field($row, 'PINCODE', $this->field($row, 'PIN', 0)),
-			'Stcd' => substr((string) $this->field($row, 'GSTIN', ''), 0, 2),
 		);
 	}
 
